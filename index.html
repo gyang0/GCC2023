@@ -92,7 +92,7 @@
 
 
     <!-- Vertex shader -->
-    <script id="vertex-shader">#version 300 es
+    <script id="vertex-shader" type="notjs">#version 300 es
         in vec4 a_position;
 
         void main(){
@@ -101,7 +101,7 @@
     </script>
 
     <!-- Fragment shader -->
-    <script id="fragment-shader">#version 300 es
+    <script id="fragment-shader" type="notjs">#version 300 es
         precision mediump float;
         
         // Output color
@@ -111,8 +111,6 @@
         uniform vec2 u_resolution;
 
         const float RADIUS = 0.4;
-
-        uniform float earth_0[]
 
         // 0 - pi
         void renderEarth1(){}
