@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+
+    <canvas id="canvas" width="1000px" height="700px"></canvas>
+
+    <body>
+        <h1>Hello world</h1>
+        <p>Entry for the GCC Hackathon 2023.</p>
+        <p>Scratch work: <a href="log.html">Click here</a></p>
+
+        <p>Todo list:</p>
+        <ul>
+            <li>Map -> sphere projection</li>
+            <li>Elevation at every pixel</li>
+            <li>Sliders for year & sea level</li>
+            <li>About page explaining significance (with graphs)</li>
+            <li>Sources, GitHub, accuracy warning</li>
+        </ul>
+
+        <!-- Sliders: earth rotation, year -->
+        <input type="range" min="0" max="6.28" value="0">
+        <input type="range" min="1900" max="2100" value="2023">
+    </body>
+
+
+    <!-- Vertex shader -->
+    <script id="vertex-shader">#version 300 es
+        in vec4 a_position;
+
+        void main(){
+            gl_Position = a_position;
+        }
+    </script>
+
+    <!-- Fragment shader -->
+    <script id="fragment-shader">#version 300 es
+        precision mediump float;
+        
+        // Output color
+        out vec4 a_color;
+
+        // Resolution of screen
+        uniform vec2 u_resolution;
+
+        const float RADIUS = 0.4;
+
+        uniform float earth_0[]
+
+        // 0 - pi
+        void renderEarth1(){}
+
+        // pi/2 - 3pi/2
+        void renderEarth2(){}
+
+        // pi - 2pi
+        void renderEarth3(){}
+
+        // 3pi/2 - pi/2
+        void renderEarth4(){}
+
+
+        void main(){
+            // Set viewpoint
+            vec2 uv = gl_FragCoord.xy/u_resolution.xy;
+            uv -= 0.5;
+            uv.x *= u_resolution.x/u_resolution.y;
+
+
+            float dist = sqrt(uv.x*uv.x + uv.y*uv.y);
+
+            if(uv.x*uv.x + uv.y*uv.y < RADIUS*RADIUS){
+                a_color = vec4(vec3(0.7 - dist), 1);
+            } else {
+                a_color = vec4(0, 0, 0, 1);
+            }
+        }
+    </script>
+
+    <!-- WebGL boilerplate -->
+    <script src="boilerplate.js"></script>
+
+    <!-- Main -->
+    <script>
+        var canvas = document.querySelector("#canvas");
+        var gl = canvas.getContext("webgl2");
+        
+        if(!gl){
+            alert("Your browser doesn't support WebGL2.");
+        } else {
+            var vertexShaderSource = document.querySelector("#vertex-shader").text;
+            var fragmentShaderSource = document.querySelector("#fragment-shader").text;
+
+            BOILERPLATE.init(gl, vertexShaderSource, fragmentShaderSource, canvas);
+            BOILERPLATE.run(gl);
+        }
+        
+    </script>
+
+</html>
