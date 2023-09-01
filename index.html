@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title></title>
+    </head>
+
+    <canvas id="canvas" width="1000px" height="700px"></canvas>
+
+    <body>
+        <!--
+            Some sourcs:
+                https://www.climate.gov/news-features/understanding-climate/climate-change-global-sea-level
+                https://visibleearth.nasa.gov/images/73934/topography
+
+
+            Alright, how does this thing work again?
+            The graphs and significance, styling and sliders will be easy enough.
+            The real problem is the earth-map projection.
+            At the start of the code, I'll read the world heightmap image for the data and save it in a global heightmap array.
+            Then I'll draw the sphere baesd on that heightmap.
+
+            When simulating sea level rises, the naive thing to do would be to iterate the heightmap all over again.
+            It could be improved to some extent by caching values.
+
+
+            1. With some kind of image analyzer, record the values of the pixels as a 2D array.
+            2. First, show the starting square of the image successfully on the screen.
+            3. Then, warp it to fit the sphere.
+            4. After that, make a button with the option to change rotations.
+            5. When the user clicks this button, it should flip to the other side.
+            6. Make that work too.
+            7. Then add multiple readings (angles). Right-and-left arrows for rotations.
+            8. Ideally you'd have 8 readings,
+            9. Include a mini version of the flat map below, with a highlighted section showing where you are.
+
+
+            NOTES:
+                In the NASA Earth heightmap, it says that the data was scaled 0-6400 meters.
+                The Andes mountains are about 3200 meters tall. It's moderately gray.
+                So I think it's reasonable to assume that black = 0, white = 6400.
+
+                *A higher-res image is available at
+                    https://eoimages.gsfc.nasa.gov/images/imagerecords/73000/73934/gebco_08_rev_elev_21600x10800.png
+
+                Looks like the sea level data is at
+                    https://climate.nasa.gov/vital-signs/sea-level/
+
+                I need to make an account to download, but it seems to be free.
+
+
+                Everytime a new angle is requested by the user:
+                    Get the appropriate map.
+                    Iterate through the values
+                    If elevation is high enough, map with brown-green-white colors.
+                    Else, show blue-black.
+            -->
+
+        <!--
+            Todo:
+                Make separate vertex shader & fragment shader files
+                Extensively comment
+                Change the script tag to "glsl" or "notjs" at the end
+                Remove debug calls in createShader and createProgram
+                Attempt to make it live-updating...might be feasible, with ~100,000 calculations per second.
+        -->
+
+        <!--
+            [DONE] 1. Use a Java program to get the grayscale values for every pixel in the image
+            2. 
+
+        -->
+
+
+        <h1>Hello world</h1>
+        <p>Entry for the GCC Hackathon 2023.</p>
+        <p>Scratch work: <a href="log.html">Click here</a></p>
+
+        <p>Todo list:</p>
+        <ul>
+            <li>Map -> sphere projection</li>
+            <li>Elevation at every pixel</li>
+            <li>Sliders for year & sea level</li>
+            <li>About page explaining significance (with graphs)</li>
+            <li>Sources, GitHub, accuracy warning</li>
+        </ul>
+
+        <!-- Sliders: earth rotation, year -->
+        <input type="range" min="0" max="6.28" value="0">
+        <input type="range" min="1900" max="2100" value="2023">
+    </body>
+
+
+    <!-- Vertex shader -->
+    <script id="vertex-shader">#version 300 es
+        in vec4 a_position;
+
+        void main(){
+            gl_Position = a_position;
+        }
+    </script>
+
+    <!-- Fragment shader -->
+    <script id="fragment-shader">#version 300 es
+        precision mediump float;
+        
+        // Output color
+        out vec4 a_color;
+
+        // Resolution of screen
+        uniform vec2 u_resolution;
+
+        const float RADIUS = 0.4;
+
+        uniform float earth_0[]
+
+        // 0 - pi
+        void renderEarth1(){}
+
+        // pi/2 - 3pi/2
+        void renderEarth2(){}
+
+        // pi - 2pi
+        void renderEarth3(){}
+
+        // 3pi/2 - pi/2
+        void renderEarth4(){}
+
+
+        void main(){
+            // Set viewpoint
+            vec2 uv = gl_FragCoord.xy/u_resolution.xy;
+            uv -= 0.5;
+            uv.x *= u_resolution.x/u_resolution.y;
+
+
+            float dist = sqrt(uv.x*uv.x + uv.y*uv.y);
+
+            if(uv.x*uv.x + uv.y*uv.y < RADIUS*RADIUS){
+                a_color = vec4(vec3(0.7 - dist), 1);
+            } else {
+                a_color = vec4(0, 0, 0, 1);
+            }
+        }
+    </script>
+
+    <!-- WebGL boilerplate -->
+    <script src="boilerplate.js"></script>
+
+    <!-- Main -->
+    <script>
+        var canvas = document.querySelector("#canvas");
+        var gl = canvas.getContext("webgl2");
+        
+        if(!gl){
+            alert("Your browser doesn't support WebGL2.");
+        } else {
+            var vertexShaderSource = document.querySelector("#vertex-shader").text;
+            var fragmentShaderSource = document.querySelector("#fragment-shader").text;
+
+            BOILERPLATE.init(gl, vertexShaderSource, fragmentShaderSource, canvas);
+            BOILERPLATE.run(gl);
+        }
+        
+    </script>
+
+</html>
