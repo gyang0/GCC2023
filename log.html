@@ -36,7 +36,6 @@
         <h1>Notes</h1>
         <ul>
             <li>The NASA elevation map says that the data was scaled 0-6400m. I'm interpreting that as 0m - black, 6400m - white, which fits reasonably.</li>
-            <li>For the 3D diagram, WebGL2 was used to speed up the drawing process. You can get it <a href="https://get.webgl.org/webgl2/enable.html" target="_blank">here</a></li>
         </ul>
 
         <h1>Development Log</h1>
@@ -44,7 +43,9 @@
         <p>Brainstorming, drawing out diagrams. Wasted a few hours with Three.js before settling on WebGL2. Found maps and some data sources.</p>
 
         <p><strong>9/2/2023</strong></p>
-        <p></p>
+        <p>Switched from WebGL2 to JS Canvas (easier). Made sphere projection, with some choppiness in exchange for speed.</p>
     </body>
+
+    <script src="page.js"></script>
 
 </html>
