@@ -10,11 +10,12 @@ import java.io.IOException;
 
 public class Test extends JPanel implements MouseListener {
     private BufferedImage img;
+    private final int RES_LOSS = 4;
 
     public Test() throws IOException {
         addMouseListener(this);
 
-        img = ImageIO.read(new File("src/globe.jpg"));
+        img = ImageIO.read(new File("src/globe2.png"));
     }
 
     @Override
@@ -29,8 +30,12 @@ public class Test extends JPanel implements MouseListener {
             file.write("const mapData = [\n");
 
             for(int y = 0; y < img.getHeight(); y++) {
+                if(y % RES_LOSS != 0) continue;
+
                 file.write("\t\"");
                 for (int x = 0; x < img.getWidth(); x++) {
+                    if(x % RES_LOSS != 0) continue;
+
                     Color rgb = new Color(img.getRGB(x, y));
 
                     if(x != img.getWidth() - 1)
@@ -42,8 +47,9 @@ public class Test extends JPanel implements MouseListener {
                 if(y != img.getHeight() - 1)
                     file.write("\",\n");
                 else
-                    file.write("\n];\n");
+                    file.write("\"\n");
             }
+            file.write("];\n");
 
             file.close();
         } catch (IOException e) {
