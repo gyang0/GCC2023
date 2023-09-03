@@ -5,97 +5,133 @@
         <title></title>
     </head>
 
-    <canvas id="canvas" width="1000px" height="700px"></canvas>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="style.css"></style>
+
+    
+    <style>
+        * {
+            overflow: hidden;
+        }
+    </style>
 
     <body>
-        <h1>Hello world</h1>
-        <p>Entry for the GCC Hackathon 2023.</p>
-        <p>Scratch work: <a href="log.html">Click here</a></p>
 
-        <p>Todo list:</p>
-        <ul>
-            <li>Map -> sphere projection</li>
-            <li>Elevation at every pixel</li>
-            <li>Sliders for year & sea level</li>
-            <li>About page explaining significance (with graphs)</li>
-            <li>Sources, GitHub, accuracy warning</li>
-        </ul>
+        <canvas id="canvas" width="1600px" height="800px" style="position: absolute"></canvas>
+
+        <br>
 
         <!-- Sliders: earth rotation, year -->
-        <input type="range" min="0" max="6.28" value="0">
-        <input type="range" min="1900" max="2100" value="2023">
+        <div id="sidebar">
+            <p>Earth Rotation: <span id="earthSliderVal">0 radians</span></p>
+            <input type="range" min="0" max="6" value="0" step="0.1" style="width:300px" id="earthSlider">
+
+            
+            <div id="pointData">
+                <p>Elevation of point: </p>
+                <p>Min. sea level required to flood: </p><br>
+                <p>(Likely flooding route shown on map.)</p>
+            </div>
+
+            <div id="barrierData">
+                <p>Considering sea level: </p>
+                <p>Barrier for blocking at coastline: </p>
+                <p>Lowest barrier along flood path: </p>
+            </div>
+
+            <br>
+
+            <div id="resetPoints" onclick="javascript: resetSpecialPoints(); drawGlobe(ctx, earthSlider.value)">
+                <p><i class="fa fa-refresh" style="position:relative;margin-left:10px;transform:translate(0%, 10%)"></i> Reset</p>
+            </div>
+        </div>
+
+
+        <div id="popup">
+            <div id="popup-close" onclick="javascript:document.getElementById('popup').style.display = 'none'"><i class="fa fa-close"></i></div>
+
+            <h1>Predicting Flood Paths</h1>
+            <p>Check out the <a href="instructions.html" target="_blank" onclick="javascript:document.getElementById('popup').style.display = 'none'">instructions page</a> for a breakdown of the features.</p>
+        </div>
     </body>
 
 
-    <!-- Vertex shader -->
-    <script id="vertex-shader">#version 300 es
-        in vec4 a_position;
-
-        void main(){
-            gl_Position = a_position;
-        }
-    </script>
-
-    <!-- Fragment shader -->
-    <script id="fragment-shader">#version 300 es
-        precision mediump float;
-        
-        // Output color
-        out vec4 a_color;
-
-        // Resolution of screen
-        uniform vec2 u_resolution;
-
-        const float RADIUS = 0.4;
-
-        // 0 - pi
-        void renderEarth1(){}
-
-        // pi/2 - 3pi/2
-        void renderEarth2(){}
-
-        // pi - 2pi
-        void renderEarth3(){}
-
-        // 3pi/2 - pi/2
-        void renderEarth4(){}
-
-
-        void main(){
-            // Set viewpoint
-            vec2 uv = gl_FragCoord.xy/u_resolution.xy;
-            uv -= 0.5;
-            uv.x *= u_resolution.x/u_resolution.y;
-
-
-            float dist = sqrt(uv.x*uv.x + uv.y*uv.y);
-
-            if(uv.x*uv.x + uv.y*uv.y < RADIUS*RADIUS){
-                a_color = vec4(vec3(0.7 - dist), 1);
-            } else {
-                a_color = vec4(0, 0, 0, 1);
-            }
-        }
-    </script>
-
-    <!-- WebGL boilerplate -->
-    <script src="boilerplate.js"></script>
-
     <!-- Main -->
-    <script>
-        var canvas = document.querySelector("#canvas");
-        var gl = canvas.getContext("webgl2");
-        
-        if(!gl){
-            alert("Your browser doesn't support WebGL2.");
-        } else {
-            var vertexShaderSource = document.querySelector("#vertex-shader").text;
-            var fragmentShaderSource = document.querySelector("#fragment-shader").text;
+    <script src="utils.js"></script>
 
-            BOILERPLATE.init(gl, vertexShaderSource, fragmentShaderSource, canvas);
-            BOILERPLATE.run(gl);
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        drawGlobe(ctx, 0, 0);
+
+        let earthSlider = document.getElementById("earthSlider"),
+            earthSliderVal = document.getElementById("earthSliderVal"),
+
+            pointData = document.getElementById("pointData"),
+            barrierData = document.getElementById("barrierData");
+
+
+        earthSlider.oninput = function(){
+            earthSliderVal.innerHTML = this.value + " radians";
+            drawGlobe(ctx, this.value);
         }
+
         
+        document.addEventListener("click", function(event){
+            let mouseX = event.clientX,
+                mouseY = event.clientY;
+
+            if((mouseX - 450)*(mouseX - 450) + (mouseY - 350)*(mouseY - 350) > 4*RADIUS*RADIUS){
+                return;
+            }
+
+            
+            numClicks++;
+            
+            let selectedX,
+                selectedY;
+
+            // Ugly reverse-engineering of projection equations
+            selectedY = (((mouseY - MAP_Y)/MAP_PIXEL_SPACING + RADIUS) * MAP_SIZE)/(2 * RADIUS);
+            selectedY = Math.floor(selectedY);
+            selectedY %= MAP_HEIGHT;
+
+            selectedX = ((mouseX - MAP_X)/MAP_PIXEL_SPACING * MAP_SIZE)/(2 * Math.sqrt(RADIUS*RADIUS - (mouseY - MAP_Y)*(mouseY - MAP_Y)/4)) + MAP_SIZE/2;
+            selectedX += MAP_WIDTH * earthSlider.value/(2 * PI);
+            selectedX = Math.floor(selectedX);
+            selectedX %= MAP_WIDTH;
+
+
+            if(mapData[selectedY][selectedX] == 0)
+                return;
+
+
+            let data = getPath(selectedX, selectedY, numClicks);
+            pointData.innerHTML = `
+                <p>Elevation of point: ~${(data.elevation * 6400/255).toFixed(0)}m</p>
+                <p>Min. sea level required to flood: +${(data.minSeaLevel * 6400/255).toFixed(0)}m</p><br>
+                <p>(Likely flooding route shown on map.)</p>
+            `;
+
+            barrierData.innerHTML = `
+                <p>Considering sea level: +${(data.minSeaLevel * 6400/255).toFixed(0)}m</p>
+                <p>Barrier for blocking at coastline: ~${(data.coastlineBarrier * 6400/255).toFixed(0)}m</p>
+                <p>Lowest barrier along flood path: ~${(data.cheapestBarrier * 6400/255).toFixed(0)}m</p>
+            `;
+
+
+            drawGlobe(ctx, earthSlider.value);
+        });
+
     </script>
 
 </html>
