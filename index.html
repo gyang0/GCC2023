@@ -5,147 +5,133 @@
         <title></title>
     </head>
 
-    <canvas id="canvas" width="1000px" height="700px"></canvas>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="style.css"></style>
+
+    
     <style>
-        #canvas {
-            border: 2px solid black;
+        * {
+            overflow: hidden;
         }
     </style>
 
     <body>
-        <!--
-            Some sourcs:
-                https://www.climate.gov/news-features/understanding-climate/climate-change-global-sea-level
-                https://visibleearth.nasa.gov/images/73934/topography
 
+        <canvas id="canvas" width="1600px" height="800px" style="position: absolute"></canvas>
 
-            [DONE] 1. With some kind of image analyzer, record the values of the pixels as a 2D array.
-            [DONE] 2. First, show the starting square of the image successfully on the screen.
-            [DONE] 3. Then, warp it to fit the sphere.
-            4. After that, make a button with the option to change rotations.
-            5. When the user clicks this button, it should flip to the other side.
-            6. Make that work too.
-            7. Then add multiple readings (angles). Right-and-left arrows for rotations.
-            8. Ideally you'd have 8 readings,
-            9. Include a mini version of the flat map below, with a highlighted section showing where you are.
-
-
-            NOTES:
-                In the NASA Earth heightmap, it says that the data was scaled 0-6400 meters.
-                The Andes mountains are about 3200 meters tall. It's moderately gray.
-                So I think it's reasonable to assume that black = 0, white = 6400.
-
-                Looks like the sea level data is at
-                    https://climate.nasa.gov/vital-signs/sea-level/
-
-                I need to make an account to download, but it seems to be free.
-
-
-                Everytime a new angle is requested by the user:
-                    Get the appropriate map.
-                    Iterate through the values
-                    If elevation is high enough, map with brown-green-white colors.
-                    Else, show blue-black.
-            -->
-
-        <!--
-            Todo:
-                Extensively comment
-                Attempt to make it live-updating...might be feasible, with ~100,000 calculations per second.
-                Use let and const instead of var
-        -->
-
-
-        <h1>Hello world</h1>
-        <p>Entry for the GCC Hackathon 2023.</p>
-        <p>Scratch work: <a href="log.html">Click here</a></p>
-
-        <p>Todo list:</p>
-        <ul>
-            <li>Sliders for year & sea level</li>
-            <li>About page explaining significance (with graphs)</li>
-            <li>Sources, GitHub, accuracy warning</li>
-        </ul>
+        <br>
 
         <!-- Sliders: earth rotation, year -->
-        <input type="range" min="0" max="6.28" value="0">
-        <input type="range" min="1900" max="2100" value="2023">
+        <div id="sidebar">
+            <p>Earth Rotation: <span id="earthSliderVal">0 radians</span></p>
+            <input type="range" min="0" max="6" value="0" step="0.1" style="width:300px" id="earthSlider">
+
+            
+            <div id="pointData">
+                <p>Elevation of point: </p>
+                <p>Min. sea level required to flood: </p><br>
+                <p>(Likely flooding route shown on map.)</p>
+            </div>
+
+            <div id="barrierData">
+                <p>Considering sea level: </p>
+                <p>Barrier for blocking at coastline: </p>
+                <p>Lowest barrier along flood path: </p>
+            </div>
+
+            <br>
+
+            <div id="resetPoints" onclick="javascript: resetSpecialPoints(); drawGlobe(ctx, earthSlider.value)">
+                <p><i class="fa fa-refresh" style="position:relative;margin-left:10px;transform:translate(0%, 10%)"></i> Reset</p>
+            </div>
+        </div>
+
+
+        <div id="popup">
+            <div id="popup-close" onclick="javascript:document.getElementById('popup').style.display = 'none'"><i class="fa fa-close"></i></div>
+
+            <h1>Predicting Flood Paths</h1>
+            <p>Check out the <a href="instructions.html" target="_blank" onclick="javascript:document.getElementById('popup').style.display = 'none'">instructions page</a> for a breakdown of the features.</p>
+        </div>
     </body>
 
-    <script src="page.js"></script>
-    <script src="utils.js"></script>
 
     <!-- Main -->
-    <script>
-        //var canvas = document.querySelector("#canvas");
-        //var gl = canvas.getContext("webgl2");
+    <script src="utils.js"></script>
 
+    <script>
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
 
-        ctx.fillStyle = "black";
-        ctx.rect(0, 0, canvas.width, canvas.height);
-        ctx.fill();
+        drawGlobe(ctx, 0, 0);
 
-        ctx.beginPath();
-            ctx.moveTo(450, 350);
-            ctx.fillStyle = "rgb(80, 80, 80)";
-            ctx.ellipse(450, 352, 303, 303, 0, 0, Math.PI*2);
-            ctx.fill();
-        ctx.closePath();
+        let earthSlider = document.getElementById("earthSlider"),
+            earthSliderVal = document.getElementById("earthSliderVal"),
 
-        
-        for(let i = 0; i < MAP_SIZE; i++){
-            for(let j = 0; j < MAP_SIZE; j++){
-
-                let ii = i % MAP_WIDTH;
-                let jj = j % MAP_HEIGHT;
-
-                ctx.beginPath();
-                
-                let x = ii * 2*RADIUS/MAP_SIZE - RADIUS;
-                
-                // Calculations (only approximations, using half-circle equations)
-                let newY = jj * 2*RADIUS/MAP_SIZE - RADIUS;
-                let curRadDist = Math.sqrt(RADIUS*RADIUS - newY*newY);
-                let newX = curRadDist*x/RADIUS;
+            pointData = document.getElementById("pointData"),
+            barrierData = document.getElementById("barrierData");
 
 
-                // Colors with some shading
-                if(mapData[jj][ii] != 0){
-                    // 0m - 3200m: dark green to dark brown -> rgb(0, 50, 0) to rgb(100, 50, 0)
-                    // 3200m - 6400m: dark brown to white -> rgb(100, 50, 0) to rgb(250, 250, 250)
-
-                    // Little outlines
-                    if(mapData[jj][ii] <= 1){
-                        ctx.fillStyle = "black";
-
-                    } else if(mapData[jj][ii] <= 125){
-                        ctx.fillStyle = toRGBString(
-                            100 * mapData[jj][ii]/125,
-                            50,
-                            0
-                        );
-
-                    } else {
-                        ctx.fillStyle = toRGBString(
-                            100 + 150 * (mapData[jj][ii] - 125)/125,
-                            50 + 200 * (mapData[jj][ii] - 125)/125,
-                            250 * (mapData[jj][ii] - 125)/125
-                        );
-                        
-                    }
-
-                }
-                else
-                    ctx.fillStyle = toRGBString(20, 50, 200);
-
-                ctx.rect(newX*3 + 450, newY*3 + 350, 3, 3);
-                ctx.fill();
-            }
+        earthSlider.oninput = function(){
+            earthSliderVal.innerHTML = this.value + " radians";
+            drawGlobe(ctx, this.value);
         }
+
         
+        document.addEventListener("click", function(event){
+            let mouseX = event.clientX,
+                mouseY = event.clientY;
+
+            if((mouseX - 450)*(mouseX - 450) + (mouseY - 350)*(mouseY - 350) > 4*RADIUS*RADIUS){
+                return;
+            }
+
+            
+            numClicks++;
+            
+            let selectedX,
+                selectedY;
+
+            // Ugly reverse-engineering of projection equations
+            selectedY = (((mouseY - MAP_Y)/MAP_PIXEL_SPACING + RADIUS) * MAP_SIZE)/(2 * RADIUS);
+            selectedY = Math.floor(selectedY);
+            selectedY %= MAP_HEIGHT;
+
+            selectedX = ((mouseX - MAP_X)/MAP_PIXEL_SPACING * MAP_SIZE)/(2 * Math.sqrt(RADIUS*RADIUS - (mouseY - MAP_Y)*(mouseY - MAP_Y)/4)) + MAP_SIZE/2;
+            selectedX += MAP_WIDTH * earthSlider.value/(2 * PI);
+            selectedX = Math.floor(selectedX);
+            selectedX %= MAP_WIDTH;
+
+
+            if(mapData[selectedY][selectedX] == 0)
+                return;
+
+
+            let data = getPath(selectedX, selectedY, numClicks);
+            pointData.innerHTML = `
+                <p>Elevation of point: ~${(data.elevation * 6400/255).toFixed(0)}m</p>
+                <p>Min. sea level required to flood: +${(data.minSeaLevel * 6400/255).toFixed(0)}m</p><br>
+                <p>(Likely flooding route shown on map.)</p>
+            `;
+
+            barrierData.innerHTML = `
+                <p>Considering sea level: +${(data.minSeaLevel * 6400/255).toFixed(0)}m</p>
+                <p>Barrier for blocking at coastline: ~${(data.coastlineBarrier * 6400/255).toFixed(0)}m</p>
+                <p>Lowest barrier along flood path: ~${(data.cheapestBarrier * 6400/255).toFixed(0)}m</p>
+            `;
+
+
+            drawGlobe(ctx, earthSlider.value);
+        });
+
     </script>
 
 </html>
