@@ -1,3 +1,6 @@
 # GCC2023
-* https://www.climate.gov/news-features/understanding-climate/climate-change-global-sea-level
-* https://visibleearth.nasa.gov/images/73934/topography
+* Submission for the Hackathon
+
+* Rising sea levels: damage mitigation and barrier height calculations (extremely inaccurate, more of a demo than a working version)
+
+* https://gyang0.github.io/GCC2023/
